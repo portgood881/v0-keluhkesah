@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
+  devIndicators: {
+    appIsrStatus: false,
+    buildActivity: false,
+  },
 
   images: {
     formats: ['image/webp', 'image/avif'],
