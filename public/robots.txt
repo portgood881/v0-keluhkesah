@@ -1,0 +1,27 @@
+# Keluh Kesah - robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Allow: /sitemap.xml
+
+# Specific crawler rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+# Sitemap location
+Sitemap: https://keluhkesah.cc/sitemap.xml
