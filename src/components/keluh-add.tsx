@@ -22,6 +22,8 @@ export function KeluhAdd({ open, onOpenChange, onPostCreated }: KeluhAddProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [messageLength, setMessageLength] = useState(0);
+  const MAX_MESSAGE_LENGTH = 1000;
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export function KeluhAdd({ open, onOpenChange, onPostCreated }: KeluhAddProps) {
       if (fromRef.current) fromRef.current.value = "";
       if (toRef.current) toRef.current.value = "";
       if (messageRef.current) messageRef.current.value = "";
+      setMessageLength(0);
 
       onOpenChange(false);
       onPostCreated();
@@ -87,13 +90,24 @@ export function KeluhAdd({ open, onOpenChange, onPostCreated }: KeluhAddProps) {
           <div>
             <Input placeholder="Untuk" ref={toRef} required />
           </div>
-          <div>
+          <div className="relative">
             <Textarea
               placeholder="Keluhanmu"
               ref={messageRef}
               required
+              maxLength={MAX_MESSAGE_LENGTH}
               className="min-h-[100px]"
+              onChange={(e) => setMessageLength(e.target.value.length)}
             />
+            <span
+              className={`absolute bottom-2 right-3 text-xs ${
+                messageLength > MAX_MESSAGE_LENGTH * 0.9
+                  ? "text-red-500 font-medium"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {messageLength}/{MAX_MESSAGE_LENGTH}
+            </span>
           </div>
           <Button
             type="submit"

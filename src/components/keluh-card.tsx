@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { filterBadWords } from "@/lib/filter-badwords";
 import { addComment, toggleLove } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-import { Calendar, Heart, MessageCircle } from "lucide-react";
+import { Calendar, Heart, MessageCircle, Share2, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -24,6 +24,7 @@ export function KeluhCard({ post, onUpdate }: KeluhCardProps) {
   const [cooldown, setCooldown] = useState(0);
   const { toast } = useToast();
   const [isLoved, setIsLoved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const commentRef = useRef<HTMLInputElement>(null);
   const commentFromRef = useRef<HTMLInputElement>(null);
@@ -100,6 +101,24 @@ export function KeluhCard({ post, onUpdate }: KeluhCardProps) {
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = `"${post.message}" - Dari: ${post.from}, Untuk: ${post.to}\n\nKeluh Kesah - https://keluhkesah.cc`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Keluh Kesah", text });
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast({ description: "Keluhan berhasil disalin!" });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const date = new Date(post.timestamp);
   const formattedDateTime = date.toLocaleString([], {
     year: "numeric",
@@ -156,6 +175,18 @@ export function KeluhCard({ post, onUpdate }: KeluhCardProps) {
             <MessageCircle className="w-4 h-4 text-text" />
             <span className="text-sm text-text">{post.comments.length}</span>
           </Button>
+          <Button
+            variant="noShadow"
+            size="sm"
+            className="flex items-center gap-2 bg-neutral hover:bg-main dark:bg-bw ml-auto"
+            onClick={handleShare}
+          >
+            {copied ? (
+              <Check className="w-4 h-4 text-green-500" />
+            ) : (
+              <Share2 className="w-4 h-4 text-text" />
+            )}
+          </Button>
         </div>
       </Card>
 
@@ -196,10 +227,24 @@ export function KeluhCard({ post, onUpdate }: KeluhCardProps) {
                 className="flex items-center gap-2 bg-neutral hover:bg-main dark:bg-bw"
                 onClick={() => setShowComments(!showComments)}
               >
-                <MessageCircle className="w-5 h-5 text-text " />
+                <MessageCircle className="w-5 h-5 text-text" />
                 <span className="text-text">
                   {post.comments.length} Komentar
                 </span>
+              </Button>
+
+              <Button
+                variant="noShadow"
+                size="sm"
+                className="flex items-center gap-2 bg-neutral hover:bg-main dark:bg-bw"
+                onClick={handleShare}
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Share2 className="w-4 h-4 text-text" />
+                )}
+                <span className="text-text">Bagikan</span>
               </Button>
             </div>
 

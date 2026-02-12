@@ -1,7 +1,10 @@
 "use client";
 
+import { EmptyState } from "@/components/empty-state";
+import { Footer } from "@/components/footer";
 import { KeluhAdd } from "@/components/keluh-add";
 import { KeluhCard } from "@/components/keluh-card";
+import { SearchSortBar, SortOption } from "@/components/search-sort-bar";
 import { SkeletonCard } from "@/components/skeleton-card";
 import { Button } from "@/components/ui/button";
 import { InteractiveGridPattern } from "@/components/ui/interactive-grid-pattern";
@@ -10,7 +13,7 @@ import { getPosts } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { MessageSquarePlus } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { KeluhPost } from "./types";
 
@@ -20,41 +23,54 @@ export default function Home() {
   const [isWibuMode, setIsWibuMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
 
   const { ref, inView } = useInView();
+  const postsRef = useRef<KeluhPost[]>([]);
+  postsRef.current = posts;
 
-  const loadPosts = async (reset = false) => {
-    if (!hasMore && !reset) return;
+  const loadPosts = useCallback(
+    async (reset = false) => {
+      if (!hasMore && !reset) return;
 
-    try {
-      const newPosts = await getPosts(reset ? 0 : posts.length, 12);
+      try {
+        const currentPosts = postsRef.current;
+        const newPosts = await getPosts(
+          reset ? 0 : currentPosts.length,
+          12,
+          searchQuery,
+          sortOption
+        );
 
-      if (reset) {
-        setPosts(newPosts);
-        setPage(1);
-      } else {
-        setPosts((prev) => [...prev, ...newPosts]);
-        setPage((prev) => prev + 1);
+        if (reset) {
+          setPosts(newPosts);
+        } else {
+          setPosts((prev) => [...prev, ...newPosts]);
+        }
+
+        setHasMore(newPosts.length === 12);
+      } catch (error) {
+        console.error("Error loading posts:", error);
+      } finally {
+        setLoading(false);
       }
-
-      setHasMore(newPosts.length === 12);
-    } catch (error) {
-      console.error("Error loading posts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [hasMore, searchQuery, sortOption]
+  );
 
   useEffect(() => {
-    loadPosts();
-  }, []);
+    setLoading(true);
+    setPosts([]);
+    setHasMore(true);
+    loadPosts(true);
+  }, [searchQuery, sortOption]);
 
   useEffect(() => {
     if (inView && !loading) {
       loadPosts();
     }
-  }, [inView]);
+  }, [inView, loading, loadPosts]);
 
   return (
     <main className="relative min-h-screen bg-gray-50 dark:bg-zinc-900">
@@ -106,12 +122,20 @@ export default function Home() {
           </Button>
         </div>
 
+        <SearchSortBar
+          onSearch={(q) => setSearchQuery(q)}
+          onSort={(s) => setSortOption(s)}
+          currentSort={sortOption}
+        />
+
         {loading && posts.length === 0 ? (
           <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
             {Array.from({ length: 6 }).map((_, index) => (
               <SkeletonCard key={`skeleton-${index}`} />
             ))}
           </div>
+        ) : posts.length === 0 ? (
+          <EmptyState isSearching={searchQuery.length > 0} />
         ) : (
           <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
             {posts.map((post) => (
@@ -133,9 +157,14 @@ export default function Home() {
         <KeluhAdd
           open={isNewPostOpen}
           onOpenChange={setIsNewPostOpen}
-          onPostCreated={() => loadPosts(true)}
+          onPostCreated={() => {
+            setSearchQuery("");
+            setSortOption("newest");
+            loadPosts(true);
+          }}
         />
       </div>
+      <Footer />
     </main>
   );
 }
