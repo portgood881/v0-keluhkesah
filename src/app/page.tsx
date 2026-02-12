@@ -30,9 +30,12 @@ export default function Home() {
   const postsRef = useRef<KeluhPost[]>([]);
   postsRef.current = posts;
 
+  const hasMoreRef = useRef(true);
+  hasMoreRef.current = hasMore;
+
   const loadPosts = useCallback(
     async (reset = false) => {
-      if (!hasMore && !reset) return;
+      if (!hasMoreRef.current && !reset) return;
 
       try {
         const currentPosts = postsRef.current;
@@ -56,7 +59,7 @@ export default function Home() {
         setLoading(false);
       }
     },
-    [hasMore, searchQuery, sortOption]
+    [searchQuery, sortOption]
   );
 
   useEffect(() => {
@@ -64,13 +67,14 @@ export default function Home() {
     setPosts([]);
     setHasMore(true);
     loadPosts(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, sortOption]);
 
   useEffect(() => {
-    if (inView && !loading) {
+    if (inView && !loading && hasMore) {
       loadPosts();
     }
-  }, [inView, loading, loadPosts]);
+  }, [inView, loading, hasMore, loadPosts]);
 
   return (
     <main className="relative min-h-screen bg-gray-50 dark:bg-zinc-900">
