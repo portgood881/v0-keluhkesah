@@ -1,10 +1,9 @@
 "use server"
 
-import { PrismaClient, Post } from '@prisma/client';
+import { Post } from '@prisma/client';
+import { prisma } from './prisma';
 import { filterBadWords } from './filter-badwords';
 import { postRateLimiter, commentRateLimiter, loveRateLimiter } from './rate-limiter';
-
-const prisma = new PrismaClient();
 
 interface NewPost {
   from: string;
@@ -28,13 +27,60 @@ function getRateLimitIdentifier(): string {
   return getClientIp();
 }
 
-export async function getPosts(skip = 0, take = 12) {
-  return await prisma.post.findMany({
+export async function getPosts(
+  skip = 0,
+  take = 12,
+  search = "",
+  sort: "newest" | "oldest" | "most_loved" | "most_commented" = "newest"
+) {
+  const where = search
+    ? {
+        OR: [
+          { message: { contains: search, mode: "insensitive" as const } },
+          { from: { contains: search, mode: "insensitive" as const } },
+          { to: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  let orderBy: Record<string, string> | Record<string, string>[] = { timestamp: "desc" };
+
+  if (sort === "oldest") {
+    orderBy = { timestamp: "asc" };
+  } else if (sort === "most_loved") {
+    orderBy = { loveCount: "desc" };
+  } else if (sort === "most_commented") {
+    // Sort by comment count requires a different approach
+    orderBy = { timestamp: "desc" };
+  }
+
+  const posts = await prisma.post.findMany({
     include: { comments: true },
-    orderBy: { timestamp: 'desc' },
+    where,
+    orderBy,
     skip,
     take,
   });
+
+  if (sort === "most_commented") {
+    posts.sort((a, b) => b.comments.length - a.comments.length);
+  }
+
+  return posts;
+}
+
+export async function getPostCount(search = "") {
+  const where = search
+    ? {
+        OR: [
+          { message: { contains: search, mode: "insensitive" as const } },
+          { from: { contains: search, mode: "insensitive" as const } },
+          { to: { contains: search, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
+
+  return await prisma.post.count({ where });
 }
 
 export async function savePost(post: NewPost) {

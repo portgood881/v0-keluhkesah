@@ -61,7 +61,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <body className={`${dmSans.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
